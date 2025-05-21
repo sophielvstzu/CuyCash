@@ -1,4 +1,5 @@
 import flet as ft
+import httpx
 
 class inicio(ft.Container):
     def __init__(self, on_login_success):
@@ -79,9 +80,22 @@ class inicio(ft.Container):
 
     def on_login(self, e):
         if self.username.value and self.password.value:
-            self.on_login_success()
+            data = {
+                "usuario": self.username.value,
+                "contraseña": self.password.value
+            }
+            try:
+                response = httpx.post("http://localhost:8000/login", json=data)
+                if response.status_code == 200:
+                    print("Inicio de sesión exitoso")
+                    self.on_login_success()
+                else:
+                    print("Error:", response.json()["detail"])
+            except Exception as ex:
+                print("Error al conectar con el backend:", ex)
         else:
             print("Faltan datos")
+
 
     def mostrar_crear_usuario(self):
         self.content = self.crear_usuario_ui
@@ -93,16 +107,28 @@ class inicio(ft.Container):
 
     def guardar_usuario(self, e):
         if all([self.email.value, self.new_username.value, self.new_password.value, self.finca_name.value]):
-            datos = {
+            data = {
                 "correo": self.email.value,
                 "usuario": self.new_username.value,
                 "contraseña": self.new_password.value,
                 "finca": self.finca_name.value
             }
-            print("Usuario creado:", datos)
-            self.volver_al_login()
-        else:
-            print("Faltan datos para crear el usuario")
+            try:
+                response = httpx.post("http://localhost:8000/registro", json=data)
+                if response.status_code == 200:
+                    print("Usuario creado con éxito")
+                    self.volver_al_login()
+                else:
+                    try:
+                        error_detail = response.json().get("detail", "Error desconocido")
+                    except Exception:
+                        error_detail = response.text or "Respuesta no válida del servidor"
+                    print("Error:", error_detail)
+            except Exception as ex:
+                print("Error al conectar con el backend:", ex)
+
+
+
 
     def vista_crear_usuario(self):
         self.email = ft.TextField(
